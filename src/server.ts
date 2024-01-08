@@ -1,4 +1,3 @@
-import 'dotenv/config';
 import http, { IncomingMessage, ServerResponse } from 'node:http';
 import { del, get, post, put } from './queries.js';
 import { parseEndpoints } from './utils.js';
