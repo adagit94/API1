@@ -4,7 +4,7 @@ import { parseEndpoints } from './utils.js';
 
 const { PORT, ENDPOINTS } = process.env;
 
-if (Number.isNaN(PORT)) throw new Error('PORT env. variable number must be defined.');
+if (typeof Number(PORT) !== "number") throw new Error('PORT env. variable number must be defined.');
 
 const endpoints = parseEndpoints(ENDPOINTS)
 
@@ -22,8 +22,10 @@ http
 
       await handleEndpoint(endpoint, urlObject.searchParams, req, res);
     } catch (err) {
+      console.error(err)
+      
       if (!req.closed) {
-        res.writeHead(500, String(err));
+        res.writeHead(500, "Internal server error.");
         res.end();
       }
     }
