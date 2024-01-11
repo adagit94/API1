@@ -41,7 +41,7 @@ const handleEndpoint = async (endpoint: string, params: URLSearchParams, req: In
 
   if (req.method === 'OPTIONS') {
     res.writeHead(200, {
-      'access-control-allow-origin': origin,
+      'access-control-allow-origin': req.headers.origin,
       'access-control-allow-headers': 'content-type',
       'access-control-allow-methods': endpoints[endpoint].methods.join(),
     });
@@ -50,13 +50,13 @@ const handleEndpoint = async (endpoint: string, params: URLSearchParams, req: In
   }
 
   if (endpoints[endpoint] === undefined) {
-    res.writeHead(403, `Endpoint ${endpoint} not supported.`, { 'access-control-allow-origin': origin });
+    res.writeHead(403, `Endpoint ${endpoint} not supported.`, { 'access-control-allow-origin': req.headers.origin });
     res.end();
     return;
   }
 
   if (!endpoints[endpoint].methods.some(method => method === req.method)) { 
-    res.writeHead(405, `Method ${req.method} isnt supported for endpoint ${endpoint}.`, { 'access-control-allow-origin': origin });
+    res.writeHead(405, `Method ${req.method} isnt supported for endpoint ${endpoint}.`, { 'access-control-allow-origin': req.headers.origin });
     res.end();
     return;
   }
