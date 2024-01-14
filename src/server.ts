@@ -43,7 +43,7 @@ const handleEndpoint = async (endpoint: string, params: URLSearchParams, req: In
     res.writeHead(200, {
       'access-control-allow-origin': req.headers.origin,
       'access-control-allow-headers': 'content-type',
-      'access-control-allow-methods': endpoints[endpoint].methods.join(),
+      'access-control-allow-methods': endpoints[endpoint]?.methods.join() ?? "",
     });
     res.end();
     return;
@@ -56,7 +56,7 @@ const handleEndpoint = async (endpoint: string, params: URLSearchParams, req: In
   }
 
   if (!endpoints[endpoint].methods.some(method => method === req.method)) { 
-    res.writeHead(405, `Method ${req.method} isnt supported for endpoint ${endpoint}.`, { 'access-control-allow-origin': req.headers.origin });
+    res.writeHead(405, `Method ${req.method} isn't supported for endpoint ${endpoint}.`, { 'access-control-allow-origin': req.headers.origin });
     res.end();
     return;
   }
