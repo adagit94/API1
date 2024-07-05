@@ -1,6 +1,5 @@
 import http from 'node:http';
-import { Endpoint, Endpoints, Method, QueryPair } from './types.js';
-import { array, compose, map, object, record, runParser, shallowEnum, string } from './parsers.js';
+import { QueryPair } from './types.js';
 
 export const isRecord = (x: unknown): x is Record<PropertyKey, unknown> => typeof x === 'object' && !Array.isArray(x) && x !== null;
 export const isRecordArray = (x: unknown): x is Record<PropertyKey, unknown>[] => Array.isArray(x) && x.every(isRecord);
@@ -59,32 +58,4 @@ export const parseJsonBody = async (req: http.IncomingMessage) => {
   });
 
   return body;
-};
-
-export const parseEndpoints = (x: unknown) => {
-  const str = runParser(string, x);
-  const endpoints = runParser(
-    map(record, rec => {
-      let endpoints: Endpoints = {};
-
-      for (const [k, v] of Object.entries(rec)) {
-        endpoints[runParser(string, k)] = runParser(
-          object<Endpoint>({
-            methods: array(
-              compose(
-                map(string, str => str.toUpperCase()),
-                shallowEnum(Method)
-              )
-            ),
-          }),
-          v
-        );
-      }
-
-      return endpoints
-    }),
-    JSON.parse(str)
-  );
-
-  return endpoints
 };

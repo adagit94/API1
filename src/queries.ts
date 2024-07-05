@@ -11,7 +11,7 @@ if (DB_URL === undefined) throw new Error('DB_URL env. variable must be defined.
 
 const pool = new pg.Pool({ connectionString: DB_URL, ...JSON.parse(POOL_SETTINGS ?? '{}') });
 
-export const get = async (endpoint: string, params: URLSearchParams, req: http.IncomingMessage, res: http.ServerResponse) => {
+export const get = async (table: string, queryParams: URLSearchParams, req: http.IncomingMessage, res: http.ServerResponse) => {
   try {
     let select: QueryPair = ['*', []];
     let where: QueryPair = ['', []];
@@ -19,7 +19,7 @@ export const get = async (endpoint: string, params: URLSearchParams, req: http.I
     let limit: QueryPair = ['', []];
     let offset: QueryPair = ['', []];
 
-    for (let [param, value] of params.entries()) {
+    for (let [param, value] of queryParams.entries()) {
       param = param.toUpperCase();
 
       switch (param) {
@@ -65,7 +65,7 @@ export const get = async (endpoint: string, params: URLSearchParams, req: http.I
     const query = `SELECT ${select[0]} FROM %I${where[0] ? ` WHERE ${where[0]}` : ''}${orderBy[0] ? ` ORDER BY ${orderBy[0]}` : ''}${
       limit[0] ? ` LIMIT ${limit[0]}` : ''
     }${offset[0] ? ` OFFSET ${offset[0]}` : ''};`;
-    const values = [...select[1], endpoint, ...where[1], ...orderBy[1], ...limit[1], ...offset[1]];
+    const values = [...select[1], table, ...where[1], ...orderBy[1], ...limit[1], ...offset[1]];
     const data = await pool.query(pgFormat(query, ...values));
 
     res.writeHead(200, { 'content-type': 'json', 'access-control-allow-origin': req.headers.origin });
@@ -76,7 +76,7 @@ export const get = async (endpoint: string, params: URLSearchParams, req: http.I
   }
 };
 
-export const post = async (endpoint: string, req: http.IncomingMessage, res: http.ServerResponse) => {
+export const post = async (table: string, req: http.IncomingMessage, res: http.ServerResponse) => {
   try {
     const body = await parseJsonBody(req);
 
@@ -95,7 +95,7 @@ export const post = async (endpoint: string, req: http.IncomingMessage, res: htt
 
           const query = `INSERT INTO %I (${cols.map(() => '%I')}) VALUES (${vals.map(() => '%L')}) RETURNING *;`;
 
-          return client.query(pgFormat(query, endpoint, ...cols, ...vals));
+          return client.query(pgFormat(query, table, ...cols, ...vals));
         })
       );
 
@@ -115,11 +115,11 @@ export const post = async (endpoint: string, req: http.IncomingMessage, res: htt
   }
 };
 
-export const put = async (endpoint: string, params: URLSearchParams, req: http.IncomingMessage, res: http.ServerResponse) => {
+export const put = async (table: string, queryParams: URLSearchParams, req: http.IncomingMessage, res: http.ServerResponse) => {
   try {
     let where: QueryPair = ['', []];
 
-    for (let [param, value] of params.entries()) {
+    for (let [param, value] of queryParams.entries()) {
       param = param.toUpperCase();
 
       switch (param) {
@@ -137,7 +137,7 @@ export const put = async (endpoint: string, params: URLSearchParams, req: http.I
     const colsVals = Object.entries(body);
 
     const query = `UPDATE %I SET ${colsVals.map(() => `%I = %L`)}${where[0] ? ` WHERE ${where[0]}` : ''} RETURNING *;`;
-    const values = [endpoint, ...colsVals.flat(), ...where[1]];
+    const values = [table, ...colsVals.flat(), ...where[1]];
     const data = await pool.query(pgFormat(query, ...values));
 
     res.writeHead(200, { 'content-type': 'json', 'access-control-allow-origin': req.headers.origin });
@@ -148,11 +148,11 @@ export const put = async (endpoint: string, params: URLSearchParams, req: http.I
   }
 };
 
-export const del = async (endpoint: string, params: URLSearchParams, req: http.IncomingMessage, res: http.ServerResponse) => {
+export const del = async (table: string, queryParams: URLSearchParams, req: http.IncomingMessage, res: http.ServerResponse) => {
   try {
     let where: QueryPair = ['', []];
 
-    for (let [param, value] of params.entries()) {
+    for (let [param, value] of queryParams.entries()) {
       param = param.toUpperCase();
 
       switch (param) {
@@ -164,7 +164,7 @@ export const del = async (endpoint: string, params: URLSearchParams, req: http.I
     }
 
     const query = `DELETE FROM %I${where[0] ? ` WHERE ${where[0]}` : ''};`;
-    const values = [endpoint, ...where[1]];
+    const values = [table, ...where[1]];
 
     await pool.query(pgFormat(query, ...values));
 

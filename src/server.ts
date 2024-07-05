@@ -1,26 +1,14 @@
-import http, { IncomingMessage, ServerResponse } from 'node:http';
-import { del, get, post, put } from './queries.js';
-import { parseEndpoints } from './utils.js';
+import http from 'node:http';
+import { route } from './router/router.js';
 
-const { PORT, ENDPOINTS } = process.env;
+const { PORT } = process.env;
 
 if (typeof Number(PORT) !== "number") throw new Error('PORT env. variable number must be defined.');
-
-const endpoints = parseEndpoints(ENDPOINTS)
 
 http
   .createServer(async (req, res) => {
     try {
-      if (req.url === undefined) {
-        res.writeHead(400, 'Url not found.');
-        res.end();
-        return;
-      }
-
-      const urlObject = new URL(req.url, `http://${req.headers.host}`);
-      const endpoint = urlObject.pathname.slice(1);
-
-      await handleEndpoint(endpoint, urlObject.searchParams, req, res);
+      await route(req, res);
     } catch (err) {
       console.error(err)
       
@@ -31,55 +19,3 @@ http
     }
   })
   .listen(Number(PORT));
-
-const handleEndpoint = async (endpoint: string, params: URLSearchParams, req: IncomingMessage, res: ServerResponse) => {
-  if (req.method === undefined) {
-    res.writeHead(400, "Method isnt present.")
-    res.end()
-    return
-  }
-
-  if (req.method === 'OPTIONS') {
-    res.writeHead(200, {
-      'access-control-allow-origin': req.headers.origin,
-      'access-control-allow-headers': 'content-type',
-      'access-control-allow-methods': endpoints[endpoint]?.methods.join() ?? "",
-    });
-    res.end();
-    return;
-  }
-
-  if (endpoints[endpoint] === undefined) {
-    res.writeHead(403, `Endpoint ${endpoint} not supported.`, { 'access-control-allow-origin': req.headers.origin });
-    res.end();
-    return;
-  }
-
-  if (!endpoints[endpoint].methods.some(method => method === req.method)) { 
-    res.writeHead(405, `Method ${req.method} isn't supported for endpoint ${endpoint}.`, { 'access-control-allow-origin': req.headers.origin });
-    res.end();
-    return;
-  }
-
-  switch (req.method.toUpperCase()) {
-    case 'GET': {
-      await get(endpoint, params, req, res);
-      break;
-    }
-
-    case 'POST': {
-      await post(endpoint, req, res);
-      break;
-    }
-
-    case 'PUT': {
-      await put(endpoint, params, req, res);
-      break;
-    }
-
-    case 'DELETE': {
-      await del(endpoint, params, req, res);
-      break;
-    }
-  }
-};
